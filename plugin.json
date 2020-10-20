@@ -1,0 +1,16 @@
+{
+  "slug": "beat-recognition",
+  "name": "Beat-Recognition",
+  "version": "1.0.0",
+  "license": "proprietary",
+  "brand": "Beat-Recognition",
+  "author": "Niels Sulzer",
+  "authorEmail": "",
+  "authorUrl": "",
+  "pluginUrl": "",
+  "manualUrl": "",
+  "sourceUrl": "",
+  "donateUrl": "",
+  "changelogUrl": "",
+  "modules": []
+}
