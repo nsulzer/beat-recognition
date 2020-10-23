@@ -12,5 +12,15 @@
   "sourceUrl": "",
   "donateUrl": "",
   "changelogUrl": "",
-  "modules": []
+  "modules": [
+    {
+      "slug": "upasd",
+      "name": "UPASD",
+      "description": "Real-time tempo and beat detection",
+      "tags": [
+        "clock",
+        "utility"
+      ]
+    }
+  ]
 }
