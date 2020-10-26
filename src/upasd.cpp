@@ -20,7 +20,7 @@ struct Upasd : Module {
 	};
 
 	#define WINDOWSIZE 1024
-	#define HOPSIZE 8
+	#define HOPSIZE 16
 
 	float hamm[WINDOWSIZE] = {0}; // Hamming window constants.
 
@@ -41,32 +41,33 @@ struct Upasd : Module {
 		return summ;
 	}
 
-	int i_buf = 0;
+	int i_buf = HOPSIZE -1;
 	float audioFrame[WINDOWSIZE] = {0};
 	float bpmShift = 0.f;
 	// bool startup = true;
 	float windows[WINDOWSIZE] = {0};
-	float buf[HOPSIZE] = {0};
+	// float buf[HOPSIZE] = {0};
 
 	void process(const ProcessArgs& args) override {
 		int i;
-		buf[i_buf] = inputs[IN_INPUT].getVoltageSum();
-		i_buf++;
-		if (i_buf >= HOPSIZE) { // buffer full
-			i_buf = 0;
-			for (i=0; i < WINDOWSIZE-HOPSIZE; ++i) { // copy buffer to frame. Note: Things are backwards because of indexing!
-				audioFrame[i+HOPSIZE] = audioFrame[i];
-				audioFrame[i] = buf[i];
-			}
-			for (i=0; i < WINDOWSIZE; ++i){
-					windows[i] = hamm[i] * audioFrame[i];
-			}
+		audioFrame[i_buf] = inputs[IN_INPUT].getVoltageSum();
+		windows[i_buf] = hamm[i_buf] * audioFrame[i_buf];
+		i_buf--;
+		if (i_buf < 0 ) { // 128 samples read
+			// compute fft, etc.
 			// float fft_res = dsp::ComplexFFT::fft(windows);
 			// float fftabs = abs(fft_res);
 			// fft_res = fft(windows);
 			// fftabs = abs(fft_res);
 			// fftabs_reduced = fftabs(1:WINDOWSIZE/2+1) / WINDOWSIZE;
 			// logmag = log(1+1000*fftabs_reduced);
+
+			i_buf = HOPSIZE - 1; // reset i_buf
+			for (i=WINDOWSIZE-HOPSIZE-1; i > 0; --i) { // move first 896 samples to end of frame, multiply with window
+				audioFrame[i+HOPSIZE] = audioFrame[i];
+				windows[i] = hamm[i] * audioFrame[i];
+			}
+
 			float flux = vsum(audioFrame);
 			outputs[OUT_OUTPUT].setVoltage(flux); // change this to actual output.
 		}
