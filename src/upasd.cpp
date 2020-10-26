@@ -1,4 +1,5 @@
 #include "plugin.hpp"
+#include <math.hpp>
 
 
 struct Upasd : Module {
@@ -18,12 +19,59 @@ struct Upasd : Module {
 		NUM_LIGHTS
 	};
 
+	#define WINDOWSIZE 1024
+	#define HOPSIZE 8
+
+	float hamm[WINDOWSIZE] = {0}; // Hamming window constants.
+
 	Upasd() {
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
-		configParam(BPM_SHIFT_PARAM, 0.f, 1.f, 0.f, "");
+		configParam(BPM_SHIFT_PARAM, -5.f, 0.f, 5.f, "BPM Scale","V/div");
+		for (int i=0; i < WINDOWSIZE; ++i) {
+			hamm[i] = 0.54 - 0.46 * cos( 2*M_PI*i / (WINDOWSIZE-1)); // Pre-compute Hamming window constants, consider LUT?
+		}
 	}
 
+	float vsum (float arr[]) {
+		// calculate sum of arrray elements
+		float summ = 0.f;
+		for (int i = 0; i < sizeof(arr); ++i) {
+			summ += arr[i];
+		}
+		return summ;
+	}
+
+	int i_buf = 0;
+	float audioFrame[WINDOWSIZE] = {0};
+	float bpmShift = 0.f;
+	// bool startup = true;
+	float windows[WINDOWSIZE] = {0};
+	float buf[HOPSIZE] = {0};
+
 	void process(const ProcessArgs& args) override {
+		int i;
+		buf[i_buf] = inputs[IN_INPUT].getVoltageSum();
+		i_buf++;
+		if (i_buf >= HOPSIZE) { // buffer full
+			i_buf = 0;
+			for (i=0; i < WINDOWSIZE-HOPSIZE; ++i) { // copy buffer to frame. Note: Things are backwards because of indexing!
+				audioFrame[i+HOPSIZE] = audioFrame[i];
+				audioFrame[i] = buf[i];
+			}
+			for (i=0; i < WINDOWSIZE; ++i){
+					windows[i] = hamm[i] * audioFrame[i];
+			}
+			// float fft_res = dsp::ComplexFFT::fft(windows);
+			// float fftabs = abs(fft_res);
+			// fft_res = fft(windows);
+			// fftabs = abs(fft_res);
+			// fftabs_reduced = fftabs(1:WINDOWSIZE/2+1) / WINDOWSIZE;
+			// logmag = log(1+1000*fftabs_reduced);
+			float flux = vsum(audioFrame);
+			outputs[OUT_OUTPUT].setVoltage(flux); // change this to actual output.
+		}
+		else { outputs[OUT_OUTPUT].setVoltage(0.f);
+		}
 	}
 };
 
@@ -38,7 +86,7 @@ struct UpasdWidget : ModuleWidget {
 		addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 		addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
-		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(25.4, 48.645)), module, Upasd::BPM_SHIFT_PARAM));
+		addParam(createParamCentered<RoundBlackSnapKnob>(mm2px(Vec(25.4, 48.645)), module, Upasd::BPM_SHIFT_PARAM));
 
 		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(15.24, 119.415)), module, Upasd::IN_INPUT));
 

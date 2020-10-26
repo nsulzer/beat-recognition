@@ -88,7 +88,7 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="1.7975195"
-     inkscape:cx="-89.255293"
+     inkscape:cx="-181.88294"
      inkscape:cy="242.83465"
      inkscape:document-units="mm"
      inkscape:current-layer="layer2"
@@ -434,7 +434,7 @@
      inkscape:groupmode="layer"
      id="layer2"
      inkscape:label="components"
-     style="display:inline">
+     style="display:none">
     <circle
        style="opacity:1;fill:#00ff00;fill-opacity:1;stroke:none;stroke-width:1.04173231;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        id="path16"
