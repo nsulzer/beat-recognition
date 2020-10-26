@@ -25,7 +25,7 @@
         "cwd": "${workspaceFolder}",
         "environment": [],
         "externalConsole": false,
-        "preLaunchTask": "Build application and add to plugin folder"
+        "preLaunchTask": "make install"
       },
       {
         "name": "Launch Debug",
@@ -39,7 +39,7 @@
         "externalConsole": false,
         "MIMode": "gdb",
         "miDebuggerPath": "C:/msys64/mingw64/bin/gdb.exe",
-        "preLaunchTask": "Build application and add to Rack plugin folder",
+        "preLaunchTask": "make install",
         "setupCommands": [
             {
                 "description": "Enable pretty-printing for gdb",
