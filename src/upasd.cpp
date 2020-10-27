@@ -20,9 +20,9 @@ struct Upasd : Module {
 	};
 
 	#define WINDOWSIZE 1024
-	#define HOPSIZE 16
+	#define HOPSIZE 128
 
-	float hamm[WINDOWSIZE] = {0}; // Hamming window constants.
+	float hamm[WINDOWSIZE] = {0.f}; // Hamming window constants.
 
 	Upasd() {
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
@@ -34,19 +34,20 @@ struct Upasd : Module {
 
 	float vsum (float arr[]) {
 		// calculate sum of arrray elements
+		int arr_size = sizeof(arr)/sizeof(arr[0]);
 		float summ = 0.f;
-		for (int i = 0; i < sizeof(arr); ++i) {
+		for (int i = 0; i < arr_size; ++i) {
 			summ += arr[i];
 		}
 		return summ;
 	}
 
 	int i_buf = HOPSIZE -1;
-	float audioFrame[WINDOWSIZE] = {0};
+	float audioFrame[WINDOWSIZE] = {0.f};
 	float bpmShift = 0.f;
-	// bool startup = true;
-	float windows[WINDOWSIZE] = {0};
-	// float buf[HOPSIZE] = {0};
+	alignas(16) float windows[WINDOWSIZE] = {0.f};
+	alignas(16) float fft_res[WINDOWSIZE*2] = {0.f};
+	alignas(16) float diff[WINDOWSIZE], logmag[WINDOWSIZE] = {0.f};
 
 	void process(const ProcessArgs& args) override {
 		int i;
@@ -55,8 +56,23 @@ struct Upasd : Module {
 		i_buf--;
 		if (i_buf < 0 ) { // 128 samples read
 			// compute fft, etc.
-			// float fft_res = dsp::ComplexFFT::fft(windows);
-			// float fftabs = abs(fft_res);
+			float flux = 0.f;
+			dsp::RealFFT fft(WINDOWSIZE);
+			fft.rfftUnordered(windows, fft_res);
+			for(i = 0; i < WINDOWSIZE/2; ++i){
+				if(fft_res[i] <= 0 ){
+					logmag[i] = log10(1-fft_res[i]*1000/WINDOWSIZE) - logmag[i];
+				}
+				else{
+					logmag[i] = log10(1+fft_res[i]*1000/WINDOWSIZE) - logmag[i];
+				}
+
+				if (logmag[i] > 0) {
+					flux += logmag[i];
+				}
+			}
+
+
 			// fft_res = fft(windows);
 			// fftabs = abs(fft_res);
 			// fftabs_reduced = fftabs(1:WINDOWSIZE/2+1) / WINDOWSIZE;
@@ -68,7 +84,7 @@ struct Upasd : Module {
 				windows[i] = hamm[i] * audioFrame[i];
 			}
 
-			float flux = vsum(audioFrame);
+			// float flux = vsum(logmag);
 			outputs[OUT_OUTPUT].setVoltage(flux); // change this to actual output.
 		}
 		else { outputs[OUT_OUTPUT].setVoltage(0.f);
